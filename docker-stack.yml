@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: taskmanager
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tasknet
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  backend:
+    image: taskmanager-backend:latest
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/taskmanager
+      SECRET_KEY: supersecretkey2024changeme
+    ports:
+      - "8000:8000"
+    networks:
+      - tasknet
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+
+  frontend:
+    image: taskmanager-frontend:latest
+    ports:
+      - "80:80"
+    networks:
+      - tasknet
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+
+networks:
+  tasknet:
+    driver: overlay
+
+volumes:
+  postgres_data:
